@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -14,8 +13,6 @@ var db *sql.DB
 func main() {
 	// Capture connection properties.
 	cfg := mysql.Config{
-		User:      os.Getenv("DBUSER"),
-		Passwd:    os.Getenv("DBPASS"),
 		Net:       "tcp",
 		Addr:      "mysql-844ee58.3a76d95.mysql.nineapis.ch",
 		DBName:    "app_prod",
