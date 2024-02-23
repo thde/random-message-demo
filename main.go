@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -22,8 +24,7 @@ func main() {
 		TLSConfig: "skip-verify", // skip verifying TLS Cert, it is selfsigned
 	}
 	// Get a database handle.
-	var err error
-	db, err = sql.Open("mysql", cfg.FormatDSN())
+	db, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,15 +36,31 @@ func main() {
 
 	defer db.Close() // Ensure database connection is closed even if there's an error
 
-	// Execute the query to retrieve a row from DB
-	var message string
 	query := "SELECT message FROM random_messages ORDER BY RAND() LIMIT 1;"
-	row := db.QueryRow(query)
-	err = row.Scan(&message)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Execute the query to retrieve a row from DB
+		var message string
+		row := db.QueryRow(query)
+		err = row.Scan(&message)
+		if err != nil {
+			log.Print(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(w, message)
+	})
+
+	s := &http.Server{
+		Addr:         ":" + os.Getenv("PORT"),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	log.Printf("listening on: %s", s.Addr)
+	err = s.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// Print the retrieved message
-	fmt.Println("Daily roasting:", message)
 }
