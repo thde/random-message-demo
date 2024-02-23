@@ -1,6 +1,0 @@
-size: micro
-port: 8080
-replicas: 1
-env:
-  - name: RESPONSE_TEXT
-    value: "here will be daily roasting messages displyed!"

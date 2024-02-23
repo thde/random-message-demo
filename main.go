@@ -19,7 +19,7 @@ func main() {
 		Net:       "tcp",
 		Addr:      "mysql-844ee58.3a76d95.mysql.nineapis.ch",
 		DBName:    "app_prod",
-		TLSConfig: "skip-verify",
+		TLSConfig: "skip-verify", // skip verifying TLS Cert, it is selfsigned
 	}
 	// Get a database handle.
 	var err error
