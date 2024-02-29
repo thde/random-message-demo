@@ -12,7 +12,7 @@ USE `random_message_prod`;
 
 CREATE TABLE messages (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    message VARCHAR(100) NOT NULL
+message VARCHAR(500) NOT NULL
 );
 
 INSERT INTO
@@ -24,4 +24,7 @@ VALUES
     ),
     (
         "Your focus determines your reality. Qui-Gon Jinn"
+),
+(
+    "We'll always be with you. No one's ever really gone. A thousand generations live in you now. —Luke Skywalker"
     );

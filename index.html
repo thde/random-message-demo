@@ -9,10 +9,13 @@
     />
   </head>
   <body>
-    {{if .Error}}
-    <pre>{{.Error}}</pre>
-    {{else}}
-    <blockquote>{{ .Message }}</blockquote>
-    {{end}}
+    <main>
+      <h1>Quotes</h1>
+      {{if .Error}}
+      <pre>{{.Error}}</pre>
+      {{else}}
+      <blockquote>{{ .Message }}</blockquote>
+      {{end}}
+    </main>
   </body>
 </html>
