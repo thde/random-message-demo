@@ -1,8 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
-	"fmt"
+	_ "embed"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -11,56 +13,75 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-var db *sql.DB
+var (
+	//go:embed "index.html"
+	index string
+	indexTmpl = template.Must(template.New("index").Parse(index))
+)
 
-func main() {
-	// Capture connection properties.
+const query = "SELECT message FROM messages ORDER BY RAND() LIMIT 1;"
+
+type response struct {
+	Message string
+	Error   error
+}
+
+func run(logger *log.Logger) error {
 	cfg := mysql.Config{
-		User:      os.Getenv("DBUSER"),
-		Passwd:    os.Getenv("DBPASS"),
+		User:      cmp.Or(os.Getenv("DB_USER"), "random_message_prod"),
+		Passwd:    os.Getenv("DB_PASS"),
 		Net:       "tcp",
-		Addr:      "mysql-844ee58.3a76d95.mysql.nineapis.ch",
-		DBName:    "app_prod",
+		Addr:      os.Getenv("DB_HOST"),
+		DBName:    cmp.Or(os.Getenv("DB_NAME"), "random_message_prod"),
 		TLSConfig: "skip-verify", // skip verifying TLS Cert, it is selfsigned
 	}
-	// Get a database handle.
+	logger.Printf("db config user=%q db=%q addr=%q", cfg.User, cfg.DBName, cfg.Addr)
+
 	db, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	defer db.Close()
 
-	pingErr := db.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
+	err = db.Ping()
+	if err != nil {
+		return err
 	}
-
-	defer db.Close() // Ensure database connection is closed even if there's an error
-
-	query := "SELECT message FROM random_messages ORDER BY RAND() LIMIT 1;"
+	logger.Printf("db ping successful")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Execute the query to retrieve a row from DB
 		var message string
 		row := db.QueryRow(query)
 		err = row.Scan(&message)
 		if err != nil {
-			log.Print(err)
+			logger.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		err := indexTmpl.Execute(w, response{
+			Message: message,
+			Error:   err,
+		})
+		if err != nil {
+			logger.Print(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		fmt.Fprint(w, message)
 	})
 
 	s := &http.Server{
-		Addr:         ":" + os.Getenv("PORT"),
+		Addr:         ":" + cmp.Or(os.Getenv("PORT"), "8080"),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
-	log.Printf("listening on: %s", s.Addr)
-	err = s.ListenAndServe()
+	logger.Printf("listening on addr=%q", s.Addr)
+	return s.ListenAndServe()
+}
+
+func main() {
+	logger := log.New(os.Stderr, "", log.Flags())
+	err := run(logger)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }

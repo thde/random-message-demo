@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+echo -n "Password: "
+read -rs ADMIN_PASSWORD
+echo ""
+
+PASSWORD="$(pwgen -B1 32 1)"
+sed "s/strongpassword/${PASSWORD}/g" seed.sql | MYSQL_PWD="${ADMIN_PASSWORD}" mysql -h "$1" -u dbadmin
+echo "$PASSWORD"
