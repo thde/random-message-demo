@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"database/sql"
 	_ "embed"
 	"html/template"
@@ -28,11 +27,11 @@ type response struct {
 
 func run(logger *log.Logger) error {
 	cfg := mysql.Config{
-		User:      cmp.Or(os.Getenv("DB_USER"), "random_message_prod"),
+		User:      or(os.Getenv("DB_USER"), "random_message_prod"),
 		Passwd:    os.Getenv("DB_PASS"),
 		Net:       "tcp",
 		Addr:      os.Getenv("DB_HOST"),
-		DBName:    cmp.Or(os.Getenv("DB_NAME"), "random_message_prod"),
+		DBName:    or(os.Getenv("DB_NAME"), "random_message_prod"),
 		TLSConfig: "skip-verify", // skip verifying TLS Cert, it is selfsigned
 	}
 	logger.Printf("db config user=%q db=%q addr=%q", cfg.User, cfg.DBName, cfg.Addr)
@@ -69,7 +68,7 @@ func run(logger *log.Logger) error {
 	})
 
 	s := &http.Server{
-		Addr:         ":" + cmp.Or(os.Getenv("PORT"), "8080"),
+		Addr:         ":" + or(os.Getenv("PORT"), "8080"),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
@@ -84,4 +83,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+}
+
+func or(strings ...string) string {
+	for _, s := range strings {
+		if s == "" {
+			continue
+		}
+
+		return s
+	}
+
+	return ""
 }
